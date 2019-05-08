@@ -1,0 +1,4 @@
+top1 accuracy: 12.2
+top5 accuracy: 26.6
+
+time consumed: ~2min
