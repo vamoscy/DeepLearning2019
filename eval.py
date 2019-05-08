@@ -2,6 +2,7 @@ from model import Model
 import argparse
 import json
 import torch
+import time
 
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
@@ -18,7 +19,7 @@ def load_data(data_dir, batch_size, split):
         data,
         batch_size=batch_size,
         shuffle=False,
-        num_workers=0
+        num_workers=4
     )
     return data_loader
 
@@ -29,8 +30,11 @@ def evaluate(model, data_loader, device, split, top_k=5):
     n_samples = 0.
     n_correct_top_1 = 0
     n_correct_top_k = 0
-
+    i = 0
     for img, target in data_loader:
+        if i % 100 ==0:
+            print(i)
+        i+=1
         img, target = img.to(device), target.to(device)
         batch_size = img.size(0)
         n_samples += batch_size
@@ -92,5 +96,8 @@ if __name__ == '__main__':
 
     # Evaluate model
     with torch.no_grad():
+        start = time.time()
         evaluate(model, data_loader_val, args.device, 'Validation')
+        end = time.time()
+        print(end-start, "evaluation time")
         # evaluate(model, data_loader_test, args.device, 'Test')
