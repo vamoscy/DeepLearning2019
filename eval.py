@@ -6,6 +6,7 @@ import time
 
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
+import torchvision.models as models
 
 def load_data(data_dir, batch_size, split):
     """ Method returning a data loader for labeled data """
@@ -87,7 +88,8 @@ if __name__ == '__main__':
         torch.cuda.manual_seed_all(args.seed)
 
     # Load pre-trained model
-    model = Model().to(args.device) # DO NOT modify this line - if your Model() takes arguments, they should have default values
+    # model = Model().to(args.device) # DO NOT modify this line - if your Model() takes arguments, they should have default values
+    model = models.resnet18().to(args.device)
     print('n parameters: %d' % sum([m.numel() for m in model.parameters()]))
 
     # Load data
