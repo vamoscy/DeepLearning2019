@@ -1,4 +1,14 @@
-top1 accuracy: 12.2
-top5 accuracy: 26.6
+top1 accuracy: 16.03
+top5 accuracy: 33.29
 
-time consumed: ~2min
+time consumed: 59.55s
+
+
+
+10 classes with highest Top 1 accuracy
+[364 198 907 892 102 734 589 899 178 915]
+Associated top 1 accuracy
+[0.859375 0.75     0.734375 0.671875 0.671875 0.671875 0.65625  0.65625
+ 0.65625  0.625   ]
+最好搞几个样例图看看这些类别都是啥玩意儿
+
