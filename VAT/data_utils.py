@@ -6,6 +6,8 @@ from torch.utils.data import sampler
 from torchvision import datasets
 from torchvision import transforms
 
+
+
 def image_loader(path, batch_size):
     transform = transforms.Compose(
         # [transforms.ToTensor()
@@ -22,14 +24,19 @@ def image_loader(path, batch_size):
             transforms.Normalize([0.485,0.456,0.406],[0.229,0.224,0.225])
         ]
     )
+    indices = []
+    for i in range(1000):
+        for j in range(32):
+            indices.append(64*i + 28 + j)
     sup_train_data = datasets.ImageFolder('{}/{}/train'.format(path, 'supervised'), transform=transform)
     sup_val_data = datasets.ImageFolder('{}/{}/val'.format(path, 'supervised'), transform=transform)
     unsup_data = datasets.ImageFolder('{}/{}/'.format(path, 'unsupervised'), transform=transform)
     data_loader_sup_train = DataLoader(
         sup_train_data,
         batch_size=batch_size,
-        shuffle=True,
-        num_workers=8
+        # shuffle=True,
+        num_workers=8,
+        sampler=sampler.SubsetRandomSampler(indices)
     )
     data_loader_sup_val = DataLoader(
         sup_val_data,
@@ -39,7 +46,7 @@ def image_loader(path, batch_size):
     )
     data_loader_unsup = DataLoader(
         unsup_data,
-        batch_size=batch_size,
+        batch_size= batch_size,
         shuffle=True,
         num_workers=8
     )

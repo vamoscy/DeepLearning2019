@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
+
 class Model(nn.Module):
     def __init__(self):
         super(Model, self).__init__()
@@ -22,7 +24,7 @@ class Model(nn.Module):
         # self.fc1 = nn.Linear(4096, 2048)
         # self.fc2 = nn.Linear(2048, 1000)
         self.fc1 = nn.Linear(512, 1000)
-        self.load_weights('weights.pth')
+        # self.load_weights('weights.pth')
 
     def load_weights(self, pretrained_model_path, cuda=True):
         # Load pretrained model

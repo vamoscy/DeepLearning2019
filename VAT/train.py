@@ -74,22 +74,22 @@ def train(args, model, device, data_loader_sup_train, data_loader_unsup, optimiz
 
     for batch_idx, (l, ul) in tqdm(enumerate(zip(data_loader_sup_train,data_loader_unsup))):
         x_l, y_l = l[0],l[1]
-        # x_ul, _ = ul[0], ul[1]
+        x_ul, _ = ul[0], ul[1]
         x_l, y_l = x_l.to(device), y_l.to(device)
-        # x_ul = x_ul.to(device)
+        x_ul = x_ul.to(device)
 
         optimizer.zero_grad()
 
-        # vat_loss = VATLoss(xi=args.xi, eps=args.eps, ip=args.ip)
+        vat_loss = VATLoss(xi=args.xi, eps=args.eps, ip=args.ip)
         cross_entropy = nn.CrossEntropyLoss()
 
-        # lds = vat_loss(model, x_ul)
+        lds = vat_loss(model, x_ul)
         output = model(x_l)
         classification_loss = cross_entropy(output, y_l)
 
         #uncomment following line and comment the second line below to use labeled and unlabeled data
-        # loss = classification_loss + args.alpha * lds
-        loss = classification_loss
+        loss = classification_loss + args.alpha * lds
+        # loss = classification_loss
 
 
         loss.backward()
@@ -97,7 +97,7 @@ def train(args, model, device, data_loader_sup_train, data_loader_unsup, optimiz
 
         acc = utils.accuracy(output, y_l)
         ce_losses.update(classification_loss.item(), x_l.shape[0])
-        # vat_losses.update(lds.item(), x_ul.shape[0])
+        vat_losses.update(lds.item(), x_ul.shape[0])
         prec1.update(acc.item(), x_l.shape[0])
         if batch_idx % 100 == 0:
             print(f"\nBatch number : {batch_idx+1}\t"
@@ -147,7 +147,7 @@ def evaluate(model, epoch, data_loader_sup_val, device, split, top_k=5):
 
         print(f'{split} top 1 accuracy: {top_1_acc:.4f}')
         print(f'{split} top {top_k} accuracy: {top_k_acc:.4f}')
-        with open('test.csv', 'ab') as f:
+        with open('test_1_sample.csv', 'ab') as f:
             np.savetxt(f, np.array([epoch, classification_loss, top_1_acc,top_k_acc]) ,delimiter=",")
 
         return top_1_acc, top_k_acc
@@ -193,64 +193,24 @@ def main():
     for epoch in range(args.epochs):
         data_loader_sup_train, data_loader_sup_val, data_loader_unsup = data_utils.image_loader(
             path='../../ssl_data_96',
-            batch_size=64,
+            batch_size=128,
         )
         optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
         train(args, model, device, data_loader_sup_train, data_loader_unsup, optimizer)
-        top_5_acc = evaluate(model, epoch, data_loader_sup_val, device, "Validation")[1]
-        if top_5_acc - curr_top_5_acc < -0.005:
-            print('early stopping')
-            break
-        else:
-            curr_top_5_acc  = curr_top_5_acc
-            torch.save(model.module.state_dict(), 'weights_new_VAT.pth')
+        print(epoch)
+        if  epoch % 64 == 0 and epoch > 0:
+            top_5_acc = evaluate(model, epoch, data_loader_sup_val, device, "Validation")[1]
+            if top_5_acc - curr_top_5_acc < -0.005:
+                print('early stopping')
+                break
+            elif top_5_acc - curr_top_5_acc < 0:
+                curr_top_5_acc  = curr_top_5_acc
+                continue
+            else:
+                curr_top_5_acc  = curr_top_5_acc
+                torch.save(model.module.state_dict(), 'weights_new_VAT_1_sample.pth')
 
 if __name__ == '__main__':
     main()
 
 
-    # for i in tqdm(range(args.iters)):
-    #     if i % args.log_interval == 0:
-    #         ce_losses = utils.AverageMeter()
-    #         vat_losses = utils.AverageMeter()
-    #         prec1 = utils.AverageMeter()
-    #
-
-        # # reset
-        #
-        #
-        # x_l, y_l = next(data_iterators['labeled'])
-        # x_ul, _ = next(data_iterators['unlabeled'])
-        #
-        # x_l, y_l = x_l.to(device), y_l.to(device)
-        # x_ul = x_ul.to(device)
-        #
-        # optimizer.zero_grad()
-        #
-        # vat_loss = VATLoss(xi=args.xi, eps=args.eps, ip=args.ip)
-        # cross_entropy = nn.CrossEntropyLoss()
-        #
-        # lds = vat_loss(model, x_ul)
-        # output = model(x_l)
-        #
-        # classification_loss = cross_entropy(output, y_l)
-        # loss = classification_loss + args.alpha * lds
-        # loss.backward()
-        # optimizer.step()
-        #
-        # acc = utils.accuracy(output, y_l)
-        # ce_losses.update(classification_loss.item(), x_l.shape[0])
-        # vat_losses.update(lds.item(), x_ul.shape[0])
-        # prec1.update(acc.item(), x_l.shape[0])
-        #
-        #
-        #
-        # if i % args.log_interval == 0:
-        #     print(f"\nIteration: {i}\t"
-        #           f'CrossEntropyLoss {ce_losses.val:.4f} ({ce_losses.avg:.4f})\t'
-        #           f'VATLoss {vat_losses.val:.4f} ({vat_losses.avg:.4f})\t'
-        #           f'Prec@1 {prec1.val:.3f} ({prec1.avg:.3f})\t'
-        #           )
-        #
-        # if i > 0 and i % (args.log_interval * 100) == 0:
-        #     torch.save(model.state_dict(), 'weights.pth')
