@@ -115,16 +115,20 @@ def evaluate(model, epoch, data_loader_sup_val, device, split, top_k=5):
     n_samples = 0.
     n_correct_top_1 = 0
     n_correct_top_k = 0
+    i=0
     with torch.no_grad():
         for img, target in data_loader_sup_val:
+            if i% 100 == 0:
+                print(i)
+            i+= 1
             img, target = img.to(device), target.to(device)
             batch_size = img.size(0)
             n_samples += batch_size
 
             # Forward
             output = model(img)
-            # cross_entropy = nn.CrossEntropyLoss()
-            # classification_loss = cross_entropy(output, target)
+            cross_entropy = nn.CrossEntropyLoss()
+            classification_loss = cross_entropy(output, target)
 
             # Top 1 accuracy
             pred_top_1 = torch.topk(output, k=1, dim=1)[1]
@@ -144,7 +148,7 @@ def evaluate(model, epoch, data_loader_sup_val, device, split, top_k=5):
         print(f'{split} top 1 accuracy: {top_1_acc:.4f}')
         print(f'{split} top {top_k} accuracy: {top_k_acc:.4f}')
         with open('test.csv', 'ab') as f:
-            np.savetxt(f, np.array([epoch, top_1_acc,top_k_acc]) ,delimiter=",")
+            np.savetxt(f, np.array([epoch, classification_loss, top_1_acc,top_k_acc]) ,delimiter=",")
 
         return top_1_acc, top_k_acc
 
@@ -183,23 +187,23 @@ def main():
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     # model = Net().to(device)
-    model = nn.DataParallel(Net(), device_ids=[0,1,2,3]).to(device)
+    model = nn.DataParallel(Model(), device_ids=[0,1,2,3]).to(device)
     # model = Model().to(device)
     curr_top_5_acc = 0
     for epoch in range(args.epochs):
         data_loader_sup_train, data_loader_sup_val, data_loader_unsup = data_utils.image_loader(
-            path='../ssl_data_96',
+            path='../../ssl_data_96',
             batch_size=64,
         )
         optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
         train(args, model, device, data_loader_sup_train, data_loader_unsup, optimizer)
         top_5_acc = evaluate(model, epoch, data_loader_sup_val, device, "Validation")[1]
         if top_5_acc - curr_top_5_acc < -0.005:
-            print('ealy stopping')
+            print('early stopping')
             break
         else:
             curr_top_5_acc  = curr_top_5_acc
-            torch.save(model.module.state_dict(), 'weights.pth')
+            torch.save(model.module.state_dict(), 'weights_new_VAT.pth')
 
 if __name__ == '__main__':
     main()
