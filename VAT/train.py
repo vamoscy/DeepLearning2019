@@ -74,22 +74,22 @@ def train(args, model, device, data_loader_sup_train, data_loader_unsup, optimiz
 
     for batch_idx, (l, ul) in tqdm(enumerate(zip(data_loader_sup_train,data_loader_unsup))):
         x_l, y_l = l[0],l[1]
-        x_ul, _ = ul[0], ul[1]
+        # x_ul, _ = ul[0], ul[1]
         x_l, y_l = x_l.to(device), y_l.to(device)
-        x_ul = x_ul.to(device)
+        # x_ul = x_ul.to(device)
 
         optimizer.zero_grad()
 
-        vat_loss = VATLoss(xi=args.xi, eps=args.eps, ip=args.ip)
+        # vat_loss = VATLoss(xi=args.xi, eps=args.eps, ip=args.ip)
         cross_entropy = nn.CrossEntropyLoss()
 
-        lds = vat_loss(model, x_ul)
+        # lds = vat_loss(model, x_ul)
         output = model(x_l)
         classification_loss = cross_entropy(output, y_l)
 
         #uncomment following line and comment the second line below to use labeled and unlabeled data
-        loss = classification_loss + args.alpha * lds
-        # loss = classification_loss
+        # loss = classification_loss + args.alpha * lds
+        loss = classification_loss
 
 
         loss.backward()
@@ -97,12 +97,12 @@ def train(args, model, device, data_loader_sup_train, data_loader_unsup, optimiz
 
         acc = utils.accuracy(output, y_l)
         ce_losses.update(classification_loss.item(), x_l.shape[0])
-        vat_losses.update(lds.item(), x_ul.shape[0])
+        # vat_losses.update(lds.item(), x_ul.shape[0])
         prec1.update(acc.item(), x_l.shape[0])
         if batch_idx % 100 == 0:
             print(f"\nBatch number : {batch_idx+1}\t"
                   f'CrossEntropyLoss {ce_losses.val:.4f} ({ce_losses.avg:.4f})\t'
-                  f'VATLoss {vat_losses.val:.4f} ({vat_losses.avg:.4f})\t'
+                  # f'VATLoss {vat_losses.val:.4f} ({vat_losses.avg:.4f})\t'
                   f'Prec@1 {prec1.val:.3f} ({prec1.avg:.3f})\t'
                   )
 
