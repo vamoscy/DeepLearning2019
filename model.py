@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
-
 import torch.nn.functional as F
-import torchvision.models as models
+
+
 
 class Model(nn.Module):
     def __init__(self):
@@ -24,7 +24,8 @@ class Model(nn.Module):
         # self.fc1 = nn.Linear(4096, 2048)
         # self.fc2 = nn.Linear(2048, 1000)
         self.fc1 = nn.Linear(512, 1000)
-        self.load_weights('weights.pth')
+        self.load_weights('./VAT/weights_new_VAT_64_sample.pth')
+        self.dropout = nn.Dropout2d(p=0.5)
 
     def load_weights(self, pretrained_model_path, cuda=True):
         # Load pretrained model
@@ -52,6 +53,7 @@ class Model(nn.Module):
         # TODO
         x = F.relu(F.max_pool2d(self.conv1_bn(self.conv1(x)), 2))
         x = F.relu(F.max_pool2d(self.conv2_bn(self.conv2(x)), 2))
+        # x = self.dropout(x)
         x = F.relu(F.max_pool2d(self.conv3_bn(self.conv3(x)), 2))
         x = F.relu(F.max_pool2d(self.conv4_bn(self.conv4(x)), 2))
         x = F.avg_pool2d(x,1)

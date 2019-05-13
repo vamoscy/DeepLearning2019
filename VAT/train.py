@@ -80,16 +80,16 @@ def train(args, model, device, data_loader_sup_train, data_loader_unsup, optimiz
 
         optimizer.zero_grad()
 
-        vat_loss = VATLoss(xi=args.xi, eps=args.eps, ip=args.ip)
+        # vat_loss = VATLoss(xi=args.xi, eps=args.eps, ip=args.ip)
         cross_entropy = nn.CrossEntropyLoss()
 
-        lds = vat_loss(model, x_ul)
+        # lds = vat_loss(model, x_ul)
         output = model(x_l)
         classification_loss = cross_entropy(output, y_l)
 
         #uncomment following line and comment the second line below to use labeled and unlabeled data
-        loss = classification_loss + args.alpha * lds
-        # loss = classification_loss
+        # loss = classification_loss + args.alpha * lds
+        loss = classification_loss
 
 
         loss.backward()
@@ -97,7 +97,7 @@ def train(args, model, device, data_loader_sup_train, data_loader_unsup, optimiz
 
         acc = utils.accuracy(output, y_l)
         ce_losses.update(classification_loss.item(), x_l.shape[0])
-        vat_losses.update(lds.item(), x_ul.shape[0])
+        # vat_losses.update(lds.item(), x_ul.shape[0])
         prec1.update(acc.item(), x_l.shape[0])
         if batch_idx % 100 == 0:
             print(f"\nBatch number : {batch_idx+1}\t"
@@ -128,6 +128,7 @@ def evaluate(model, epoch, data_loader_sup_val, device, split, top_k=5):
             # Forward
             output = model(img)
             cross_entropy = nn.CrossEntropyLoss()
+            # print(output,target)
             classification_loss = cross_entropy(output, target)
 
             # Top 1 accuracy
@@ -137,6 +138,7 @@ def evaluate(model, epoch, data_loader_sup_val, device, split, top_k=5):
             # Top k accuracy
             pred_top_k = torch.topk(output, k=top_k, dim=1)[1]
             target_top_k = target.view(-1, 1).expand(batch_size, top_k)
+            # print(pred_top_k)
             n_correct_top_k += pred_top_k.eq(target_top_k).int().sum().item()
 
         # Accuracy
@@ -147,7 +149,7 @@ def evaluate(model, epoch, data_loader_sup_val, device, split, top_k=5):
 
         print(f'{split} top 1 accuracy: {top_1_acc:.4f}')
         print(f'{split} top {top_k} accuracy: {top_k_acc:.4f}')
-        with open('test_1_sample.csv', 'ab') as f:
+        with open('test_64_sample_labeled_only.csv', 'ab') as f:
             np.savetxt(f, np.array([epoch, classification_loss, top_1_acc,top_k_acc]) ,delimiter=",")
 
         return top_1_acc, top_k_acc
@@ -198,17 +200,13 @@ def main():
         optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
         train(args, model, device, data_loader_sup_train, data_loader_unsup, optimizer)
         print(epoch)
-        if  epoch % 64 == 0 and epoch > 0:
+        if  epoch % 1 == 0 and epoch >0:
             top_5_acc = evaluate(model, epoch, data_loader_sup_val, device, "Validation")[1]
-            if top_5_acc - curr_top_5_acc < -0.005:
-                print('early stopping')
-                break
-            elif top_5_acc - curr_top_5_acc < 0:
-                curr_top_5_acc  = curr_top_5_acc
+            if top_5_acc - curr_top_5_acc < 0:
                 continue
             else:
-                curr_top_5_acc  = curr_top_5_acc
-                torch.save(model.module.state_dict(), 'weights_new_VAT_1_sample.pth')
+                curr_top_5_acc  = top_5_acc
+                torch.save(model.module.state_dict(), 'weights_new_VAT_64_sample_labeled_only.pth')
 
 if __name__ == '__main__':
     main()

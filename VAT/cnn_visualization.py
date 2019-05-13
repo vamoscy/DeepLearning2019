@@ -32,7 +32,7 @@ class CNNLayerVisualization():
             # Gets the conv output of the selected filter (from selected layer)
             self.conv_output = grad_out[0, self.selected_filter]
         # Hook the selected layer
-        self.model[self.selected_layer].register_forward_hook(hook_function)
+        self.model.conv1.register_forward_hook(hook_function)
 
     def visualise_layer_with_hooks(self):
         # Hook the selected layer
@@ -118,7 +118,7 @@ if __name__ == '__main__':
     cnn_layer = 1
     filter_pos = 5
     # Fully connected layer is not needed
-    pretrained_model = Model().features
+    pretrained_model = Model()
     layer_vis = CNNLayerVisualization(pretrained_model, cnn_layer, filter_pos)
 
     # Layer visualization with pytorch hooks

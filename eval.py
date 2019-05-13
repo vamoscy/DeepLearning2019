@@ -12,7 +12,17 @@ def load_data(data_dir, batch_size, split):
     """ Method returning a data loader for labeled data """
     # TODO (optional): add data transformations if needed
     transform = transforms.Compose([
-        transforms.ToTensor()
+        # transforms.ToTensor()
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomVerticalFlip(),
+        # transforms.Resize(130),
+        transforms.ColorJitter(brightness=0.4,
+                               contrast=0.4,
+                               saturation=0.4,
+                               hue=0.1),
+        transforms.RandomRotation(20),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ]
     )
     data = datasets.ImageFolder(f'{data_dir}/supervised/{split}', transform=transform)
@@ -32,6 +42,9 @@ def evaluate(model, data_loader, device, split, top_k=5):
     n_correct_top_1 = 0
     n_correct_top_k = 0
     i = 0
+    correct = []
+    incorrect = []
+    confusion_matrix = torch.zeros(1000, 1000)
     for img, target in data_loader:
         if i % 100 ==0:
             print(i)
@@ -44,14 +57,20 @@ def evaluate(model, data_loader, device, split, top_k=5):
         output = model(img)
 
         # Top 1 accuracy
+        _, preds = torch.max(output, 1)
+        for t, p in zip(target.view(-1), preds.view(-1)):
+                confusion_matrix[t.long(), p.long()] += 1
+
         pred_top_1 = torch.topk(output, k=1, dim=1)[1]
         n_correct_top_1 += pred_top_1.eq(target.view_as(pred_top_1)).int().sum().item()
-
         # Top k accuracy
         pred_top_k = torch.topk(output, k=top_k, dim=1)[1]
         target_top_k = target.view(-1, 1).expand(batch_size, top_k)
         n_correct_top_k += pred_top_k.eq(target_top_k).int().sum().item()
-
+    print(confusion_matrix.diagonal())
+    a = confusion_matrix.diagonal().numpy()
+    print(a.argsort()[-10:][::-1])
+    print(a[a.argsort()[-10:][::-1]] / 64)
     # Accuracy
     top_1_acc = n_correct_top_1/n_samples
     top_k_acc = n_correct_top_k/n_samples
@@ -67,9 +86,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Evaluation')
     parser.add_argument('--data_dir', type=str, default='../ssl_data_96',
                         help='location of data')
-    parser.add_argument('--batch_size', type=int, default=64, metavar='N',
+    parser.add_argument('--batch_size', type=int, default=128, metavar='N',
                         help='input batch size for training (default: 64)')
-    parser.add_argument('--model_path', type=str, default='weights.pth',
+    parser.add_argument('--model_path', type=str, default='./VAT/weights_new_VAT_64_sample.pth',
                         help='location of model weights')
     parser.add_argument('--no_cuda', action='store_true', default=False,
                         help='enables CUDA training')
@@ -88,8 +107,8 @@ if __name__ == '__main__':
         torch.cuda.manual_seed_all(args.seed)
 
     # Load pre-trained model
+    model = torch.nn.DataParallel(Model(), device_ids=[0,1,2,3]).to(args.device)
     # model = Model().to(args.device) # DO NOT modify this line - if your Model() takes arguments, they should have default values
-    model = models.resnet18().to(args.device)
     print('n parameters: %d' % sum([m.numel() for m in model.parameters()]))
 
     # Load data
